@@ -1,6 +1,8 @@
 // This file was developed by Thomas Müller <thomas94@gmx.net>.
 // It is published under the BSD 3-Clause License within the LICENSE file.
 
+#include <inttypes.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -18,14 +20,14 @@ extern "C" {
         // needs to already have the correct size, hence the caller must have already requested the width, height, and number of
         // channels beforehand.
         int width, height, nChannels;
-        unsigned char* tmp = stbi_load_from_memory(data, len, &width, &height, &nChannels, nDesiredChannels);
+        unsigned char* tmp = stbi_load_from_memory(data, (int)len, &width, &height, &nChannels, nDesiredChannels);
 
         if (!tmp) {
             return false;
         }
 
         size_t nBytes = ((size_t)width * height) * nDesiredChannels;
-        for (int i = 0; i < nBytes; ++i) {
+        for (size_t i = 0; i < nBytes; ++i) {
             dst[i] = tmp[i];
         }
 
@@ -34,11 +36,11 @@ extern "C" {
     }
 
     EXPORT bool StbiInfoFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* nChannels) {
-        return stbi_info_from_memory(data, len, w, h, nChannels) == 1;
+        return stbi_info_from_memory(data, (int)len, w, h, nChannels) == 1;
     }
 
     EXPORT unsigned char* StbiLoadFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* nChannels, int nDesiredChannels) {
-        return stbi_load_from_memory(data, len, w, h, nChannels, nDesiredChannels);
+        return stbi_load_from_memory(data, (int)len, w, h, nChannels, nDesiredChannels);
     }
 
     EXPORT void StbiFree(unsigned char* pixels) {

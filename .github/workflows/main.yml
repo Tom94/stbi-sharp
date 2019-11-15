@@ -1,0 +1,87 @@
+name: CI
+
+on: 
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_native_linux:
+    name: Build native on linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../libstbi
+          make install
+      - uses: actions/upload-artifact@master
+        with:
+          name: linux-x64
+          path: runtimes/linux-x64
+
+  build_native_macos:
+    name: Build native on macOS
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../libstbi
+          make install
+      - uses: actions/upload-artifact@master
+        with:
+          name: osx-x64
+          path: runtimes/osx-x64
+
+  build_native_windows:
+    name: Build native on Windows
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Setup MSBuild.exe
+        uses: warrenbuckley/Setup-MSBuild@v1
+
+      - name: Build
+        run: |
+          mkdir build
+          cd build
+          cmake ../libstbi
+          msbuild /v:m /p:Configuration=Release INSTALL.vcxproj
+
+      - uses: actions/upload-artifact@master
+        with:
+          name: win-x64
+          path: runtimes/win-x64
+
+  build_and_publish_wrapper:
+    name: Build and publish C# wrapper
+    runs-on: ubuntu-latest
+    needs: [build_native_linux, build_native_macos, build_native_windows]
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/download-artifact@master
+        with:
+          name: linux-x64
+          path: runtimes/linux-x64
+      - uses: actions/download-artifact@master
+        with:
+          name: osx-x64
+          path: runtimes/osx-x64
+      - uses: actions/download-artifact@master
+        with:
+          name: win-x64
+          path: runtimes/win-x64
+      - run: dotnet pack -c Release
