@@ -1,0 +1,32 @@
+# Build artifacts
+build/
+
+# Automatically generated files by .vscode
+/.vscode
+
+# Development project files
+*.sublime-project
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
