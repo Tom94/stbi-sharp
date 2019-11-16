@@ -5,5 +5,29 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
     <Description>A wrapper around stb_image.h</Description>
+    <AssemblyTitle>STBI C# wrapper</AssemblyTitle>
+    <AssemblyName>StbiSharp</AssemblyName>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
+  <PropertyGroup Label="Nuget">
+    <IsPackable>true</IsPackable>
+    <Title>STBI C# wrapper</Title>
+    <Description>A C# wrapper of the single-header stb_image.h image-loading library.</Description>
+    <PackageId>StbiSharp</PackageId>
+    <PackageTags>image png jpg jpeg bmp tga hdr psd pnm load</PackageTags>
+    <PackageReleaseNotes>Automated release.</PackageReleaseNotes>
+    <Authors>Thomas Müller</Authors>
+    <Owners>Thomas Müller</Owners>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <Version>1.0.1</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="runtimes\**\*">
+      <Pack>true</Pack>
+      <PackagePath>runtimes</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="LICENSE.txt" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+  </ItemGroup>
 </Project>
