@@ -98,4 +98,4 @@ jobs:
       - name: Publish to nuget
         run: |
           cd bin/Release
-          dotnet nuget push StbiSharp.1.0.3.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+          dotnet nuget push StbiSharp.1.0.4.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json

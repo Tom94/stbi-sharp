@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;netstandard2.0</TargetFrameworks>
     <RootNamespace>StbiSharp</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
@@ -19,7 +19,7 @@
     <Authors>Thomas Müller</Authors>
     <Owners>Thomas Müller</Owners>
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.5.3" />
