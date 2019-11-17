@@ -4,7 +4,7 @@
 #include <inttypes.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <stb_image.h>
 
 #ifdef _WIN32
     #define EXPORT __declspec(dllexport)
