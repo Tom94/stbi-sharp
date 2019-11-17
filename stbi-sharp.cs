@@ -7,17 +7,36 @@ using System.Runtime.InteropServices;
 
 namespace StbiSharp
 {
+    /// <summary>
+    /// A disposable class that exposes image data and metadata for images loaded via STBI.
+    /// On disposal, frees any native memory that has been allocated to store the image data.
+    /// </summary>
     unsafe public class StbiImage : IDisposable
     {
         private byte* data;
 
+        /// <summary>
+        /// The width of the image in number of pixels.
+        /// </summary>
         public int Width { get; private set; }
+
+        /// <summary>
+        /// The height of the image in number of pixels.
+        /// </summary>
         public int Height { get; private set; }
+
+        /// <summary>
+        /// The number of colour channels of the image.
+        /// </summary>
         public int NumChannels { get; private set; }
 
+        /// <summary>
+        /// The raw image data. It is stored in in row-major order, pixel by pixel. Each pixel consists
+        /// of <see cref="NumChannels"/> bytes ordered RGBA.
+        /// </summary>
         public ReadOnlySpan<byte> Data => new ReadOnlySpan<byte>(data, Width * Height * NumChannels);
 
-        public StbiImage(byte* data, int width, int height, int numChannels)
+        internal StbiImage(byte* data, int width, int height, int numChannels)
         {
             this.data = data;
 
@@ -53,38 +72,161 @@ namespace StbiSharp
 
     public class Stbi
     {
+        /// <summary>
+        /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/> into <paramref name="dst"/>. Requires an additional copy
+        /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFromMemory"/>.
+        /// </summary>
+        /// <param name="data">Pointer to the beginning of the encoded image data.</param>
+        /// <param name="len">Number of bytes that the encoded image data is long.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <param name="dst">Pointer to the beginning of the destination buffer into which the
+        /// image is loaded. The loaded image will be stored in this buffer in row-major format, pixel
+        /// by pixel. Each pixel consists of N bytes where N is the number of channels, ordered RGBA.</param>
+        /// <returns>True on success, false on failure.</returns>
         [DllImport("stbi")]
-        unsafe public static extern bool LoadFromMemoryIntoBuffer(byte* data, long len, byte* dst);
+        unsafe public static extern bool LoadFromMemoryIntoBuffer(byte* data, long len, int desiredNumChannels, byte* dst);
 
-        unsafe public static void LoadFromMemoryIntoBuffer(byte[] data, byte[] dst)
+        /// <summary>
+        /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/> into <paramref name="dst"/>. Requires an additional copy
+        /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFromMemory"/>.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <param name="dst">The destination buffer into which the image is loaded. The loaded image
+        /// will be stored in this buffer in row-major format, pixel by pixel. Each pixel consists of
+        /// N bytes where N is the number of channels, ordered RGBA.</param>
+        /// <exception cref="ArgumentException">Thrown when image loading fails.</exception>
+        unsafe public static void LoadFromMemoryIntoBuffer(byte[] data, int desiredNumChannels, byte[] dst)
         {
             fixed (byte* address = data)
                 fixed (byte* dstAddress = dst)
-                    if (!LoadFromMemoryIntoBuffer(address, data.Length, dstAddress))
+                    if (!LoadFromMemoryIntoBuffer(address, data.Length, desiredNumChannels, dstAddress))
                         throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}.");
         }
 
-        public static void LoadFromMemoryInfoBuffer(MemoryStream m, byte[] dst) =>
-            LoadFromMemoryIntoBuffer(m.GetBuffer(), dst);
+        /// <summary>
+        /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/> into <paramref name="dst"/>. Requires an additional copy
+        /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFromMemory"/>.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <param name="dst">The destination buffer into which the image is loaded. The loaded image
+        /// will be stored in this buffer in row-major format, pixel by pixel. Each pixel consists of
+        /// N bytes where N is the number of channels, ordered RGBA.</param>
+        /// <exception cref="ArgumentException">Thrown when image loading fails.</exception>
+        public static void LoadFromMemoryInfoBuffer(MemoryStream data, int desiredNumChannels, byte[] dst) =>
+            LoadFromMemoryIntoBuffer(data.GetBuffer(), desiredNumChannels, dst);
 
+        /// <summary>
+        /// Retrieves metadata from an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data">Pointer to the beginning of the encoded image data.</param>
+        /// <param name="len">Number of bytes that the encoded image data is long.</param>
+        /// <param name="width">The number of pixels the image is wide.</param>
+        /// <param name="height">The number of pixels the image is tall.</param>
+        /// <param name="numChannels">The number of colour channels of the image.</param>
+        /// <returns>True on success, false on failure.</returns>
         [DllImport("stbi")]
         unsafe public static extern bool InfoFromMemory(byte* data, long len, out int width, out int height, out int numChannels);
 
-        unsafe public static bool InfoFromMemory(byte[] data, out int width, out int height, out int numChannels)
+        /// <summary>
+        /// Retrieves metadata from an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data">The encoded image data.</param>
+        /// <param name="width">The number of pixels the image is wide.</param>
+        /// <param name="height">The number of pixels the image is tall.</param>
+        /// <param name="numChannels">The number of colour channels of the image.</param>
+        /// <exception cref="ArgumentException">Thrown when image metadata loading fails.</exception>
+        unsafe public static void InfoFromMemory(byte[] data, out int width, out int height, out int numChannels)
         {
             fixed (byte* address = data)
-                return InfoFromMemory(address, data.Length, out width, out height, out numChannels);
+                if (!InfoFromMemory(address, data.Length, out width, out height, out numChannels))
+                    throw new ArgumentException($"STBI could not load image metadata from the provided {nameof(data)}.");
         }
 
-        public static bool InfoFromMemory(MemoryStream m, out int width, out int height, out int numChannels)
-            => InfoFromMemory(m.GetBuffer(), out width, out height, out numChannels);
+        /// <summary>
+        /// Retrieves metadata from an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data">The encoded image data.</param>
+        /// <param name="width">The number of pixels the image is wide.</param>
+        /// <param name="height">The number of pixels the image is tall.</param>
+        /// <param name="numChannels">The number of colour channels of the image.</param>
+        /// <exception cref="ArgumentException">Thrown when image metadata loading fails.</exception>
+        public static void InfoFromMemory(MemoryStream data, out int width, out int height, out int numChannels)
+            => InfoFromMemory(data.GetBuffer(), out width, out height, out numChannels);
 
+        /// <summary>
+        /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data">Pointer to the beginning of the encoded image data.</param>
+        /// <param name="len">Number of bytes that the encoded image data is long.</param>
+        /// <param name="width">The number of pixels the image is wide.</param>
+        /// <param name="height">The number of pixels the image is tall.</param>
+        /// <param name="numChannels">The number of colour channels of the image.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <returns>Null on failure. On success, returns a pointer to the beginning of the buffer into which the
+        /// image was loaded. The loaded image will be stored in this buffer in row-major format, pixel
+        /// by pixel. Each pixel consists of N bytes where N is the number of channels, ordered RGBA.</returns>
         [DllImport("stbi")]
         unsafe public static extern byte* LoadFromMemory(byte* data, long len, out int width, out int height, out int numChannels, int desiredNumChannels);
 
+        /// <summary>
+        /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/>. Only
+        /// has to be called when the byte-pointer overload of <see cref="LoadFromMemory"/> was used.
+        /// </summary>
+        /// <param name="data">Pointer to the beginning of the pixel data.</param>
         [DllImport("stbi")]
-        unsafe public static extern void Free(byte* pixels);
+        unsafe public static extern void Free(byte* data);
 
+        /// <summary>
+        /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <returns>Returns a disposable <see cref="StbiImage"/> object that exposes image data
+        /// and metadata. On disposal, <see cref="StbiImage"/> frees any native memory that has
+        /// been allocated to store the image data.</returns>
         unsafe public static StbiImage LoadFromMemory(byte[] data, int desiredNumChannels)
         {
             fixed (byte* address = data) {
@@ -97,7 +239,22 @@ namespace StbiSharp
             }
         }
 
-        public static StbiImage LoadFromMemory(MemoryStream m, int desiredNumChannels)
-            => LoadFromMemory(m.GetBuffer(), desiredNumChannels);
+        /// <summary>
+        /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <returns>Returns a disposable <see cref="StbiImage"/> object that exposes image data
+        /// and metadata. On disposal, <see cref="StbiImage"/> frees any native memory that has
+        /// been allocated to store the image data.</returns>
+        public static StbiImage LoadFromMemory(MemoryStream data, int desiredNumChannels)
+            => LoadFromMemory(data.GetBuffer(), desiredNumChannels);
     }
 }

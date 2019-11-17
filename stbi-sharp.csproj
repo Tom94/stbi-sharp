@@ -19,7 +19,7 @@
     <Authors>Thomas Müller</Authors>
     <Owners>Thomas Müller</Owners>
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="runtimes\**\*">
