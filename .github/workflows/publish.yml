@@ -1,12 +1,9 @@
 name: CI
 
-on: 
+on:
   push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+    tags:        
+      - v*
 
 jobs:
   build_native_linux:
@@ -71,7 +68,7 @@ jobs:
           name: win-x64
           path: runtimes/win-x64
 
-  build_wrapper:
+  build_and_publish_wrapper:
     name: Build and publish C# wrapper
     runs-on: ubuntu-latest
     needs: [build_native_linux, build_native_macos, build_native_windows]
@@ -95,3 +92,7 @@ jobs:
           path: runtimes/win-x64
       - name: Build and pack nuget package
         run: dotnet pack -c Release
+      - name: Publish to nuget
+        run: |
+          cd bin/Release
+          dotnet nuget push StbiSharp.1.0.4.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
