@@ -8,14 +8,17 @@ A C# wrapper around the single-header image-loading library [stb_image.h](https:
 
 Grab __StbiSharp__ from [nuget](https://www.nuget.org/packages/StbiSharp/), then load an image as follows:
 ```csharp
-using (var stream = File.OpenRead("some-image.jpg"))
-using (var memoryStream = new MemoryStream())
+public void doSomethingWithImage()
 {
-    stream.CopyTo(memoryStream);
-    StbiImage image = Stbi.LoadFromMemory(memoryStream, 4);
+    using (var stream = File.OpenRead("some-image.jpg"))
+    using (var memoryStream = new MemoryStream())
+    {
+        stream.CopyTo(memoryStream);
+        StbiImage image = Stbi.LoadFromMemory(memoryStream, 4);
 
-    // Use image.Width, image.Height,
-    // image.NumChannels, and image.Data.
+        // Use image.Width, image.Height,
+        // image.NumChannels, and image.Data.
+    }
 }
 ```
 If the encoded image is directly available in memory, no file stream needs to be used.
