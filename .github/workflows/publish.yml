@@ -1,8 +1,11 @@
-name: CI
+name: Publish
 
 on:
   push:
-    tags:        
+    tags:
+      - v*
+  create:
+    tags:
       - v*
 
 jobs:
@@ -90,9 +93,13 @@ jobs:
         with:
           name: win-x64
           path: runtimes/win-x64
+      - name: Get version from tag
+        run: |
+          export VERSION=`echo ${{ github.ref }} | cut -d'/' -f3 | tail -c +2`
+          echo $VERSION
       - name: Build and pack nuget package
-        run: dotnet pack -c Release
+        run: dotnet pack -c Release /p:Version=$VERSION
       - name: Publish to nuget
         run: |
           cd bin/Release
-          dotnet nuget push StbiSharp.1.0.4.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+          dotnet nuget push StbiSharp.$VERSION.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json

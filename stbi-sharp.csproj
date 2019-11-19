@@ -19,7 +19,6 @@
     <Authors>Thomas Müller</Authors>
     <Owners>Thomas Müller</Owners>
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <Version>1.0.4</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.5.3" />
