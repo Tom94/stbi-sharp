@@ -13,7 +13,7 @@ namespace StbiSharp
     /// </summary>
     unsafe public class StbiImage : IDisposable
     {
-        private byte* data;
+        private byte* data = null;
 
         /// <summary>
         /// The width of the image in number of pixels.
