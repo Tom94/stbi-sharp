@@ -90,13 +90,12 @@ jobs:
         with:
           name: win-x64
           path: runtimes/win-x64
-      - name: Get version from tag
+      - name: Get version, build, and publish
         run: |
           export VERSION=`echo ${{ github.ref }} | cut -d'/' -f3 | tail -c +2`
           echo $VERSION
-      - name: Build and pack nuget package
-        run: dotnet pack -c Release /p:Version=$VERSION
-      - name: Publish to nuget
-        run: |
+          echo Building and packing...
+          dotnet pack -c Release /p:Version=$VERSION
+          echo Publishing...
           cd bin/Release
           dotnet nuget push StbiSharp.$VERSION.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
