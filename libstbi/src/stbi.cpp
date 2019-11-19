@@ -46,4 +46,8 @@ extern "C" {
     EXPORT void Free(unsigned char* pixels) {
         stbi_image_free(pixels);
     }
+
+    EXPORT const char* FailureReason() {
+        return stbi_failure_reason();
+    }
 }

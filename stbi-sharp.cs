@@ -115,7 +115,7 @@ namespace StbiSharp
             fixed (byte* address = data)
                 fixed (byte* dstAddress = dst)
                     if (!LoadFromMemoryIntoBuffer(address, data.Length, desiredNumChannels, dstAddress))
-                        throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}.");
+                        throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace StbiSharp
         {
             fixed (byte* address = data)
                 if (!InfoFromMemory(address, data.Length, out width, out height, out numChannels))
-                    throw new ArgumentException($"STBI could not load image metadata from the provided {nameof(data)}.");
+                    throw new ArgumentException($"STBI could not load image metadata from the provided {nameof(data)}: {FailureReason()}");
         }
 
         /// <summary>
@@ -213,6 +213,12 @@ namespace StbiSharp
         unsafe public static extern void Free(byte* data);
 
         /// <summary>
+        /// After failure to load an image, returns a string describing the reason for the failure.
+        /// </summary>
+        [DllImport("stbi")]
+        public static extern string FailureReason();
+
+        /// <summary>
         /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
         /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
         /// residing at <paramref name="data"/>.
@@ -232,7 +238,7 @@ namespace StbiSharp
             fixed (byte* address = data) {
                 byte* pixels = LoadFromMemory(address, data.Length, out int width, out int height, out int numChannels, desiredNumChannels);
                 if (pixels == null) {
-                    throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}.");
+                    throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
                 }
 
                 return new StbiImage(pixels, width, height, desiredNumChannels == 0 ? numChannels : desiredNumChannels);
