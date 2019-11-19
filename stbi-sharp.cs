@@ -110,7 +110,7 @@ namespace StbiSharp
         /// will be stored in this buffer in row-major format, pixel by pixel. Each pixel consists of
         /// N bytes where N is the number of channels, ordered RGBA.</param>
         /// <exception cref="ArgumentException">Thrown when image loading fails.</exception>
-        unsafe public static void LoadFromMemoryIntoBuffer(byte[] data, int desiredNumChannels, byte[] dst)
+        unsafe public static void LoadFromMemoryIntoBuffer(ReadOnlySpan<byte> data, int desiredNumChannels, Span<byte> dst)
         {
             fixed (byte* address = data)
                 fixed (byte* dstAddress = dst)
@@ -135,7 +135,7 @@ namespace StbiSharp
         /// will be stored in this buffer in row-major format, pixel by pixel. Each pixel consists of
         /// N bytes where N is the number of channels, ordered RGBA.</param>
         /// <exception cref="ArgumentException">Thrown when image loading fails.</exception>
-        public static void LoadFromMemoryInfoBuffer(MemoryStream data, int desiredNumChannels, byte[] dst) =>
+        public static void LoadFromMemoryInfoBuffer(MemoryStream data, int desiredNumChannels, Span<byte> dst) =>
             LoadFromMemoryIntoBuffer(data.GetBuffer(), desiredNumChannels, dst);
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace StbiSharp
         /// <param name="height">The number of pixels the image is tall.</param>
         /// <param name="numChannels">The number of colour channels of the image.</param>
         /// <exception cref="ArgumentException">Thrown when image metadata loading fails.</exception>
-        unsafe public static void InfoFromMemory(byte[] data, out int width, out int height, out int numChannels)
+        unsafe public static void InfoFromMemory(ReadOnlySpan<byte> data, out int width, out int height, out int numChannels)
         {
             fixed (byte* address = data)
                 if (!InfoFromMemory(address, data.Length, out width, out height, out numChannels))
@@ -233,7 +233,7 @@ namespace StbiSharp
         /// <returns>Returns a disposable <see cref="StbiImage"/> object that exposes image data
         /// and metadata. On disposal, <see cref="StbiImage"/> frees any native memory that has
         /// been allocated to store the image data.</returns>
-        unsafe public static StbiImage LoadFromMemory(byte[] data, int desiredNumChannels)
+        unsafe public static StbiImage LoadFromMemory(ReadOnlySpan<byte> data, int desiredNumChannels)
         {
             fixed (byte* address = data) {
                 byte* pixels = LoadFromMemory(address, data.Length, out int width, out int height, out int numChannels, desiredNumChannels);
