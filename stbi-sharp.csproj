@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;netcoreapp2.0;netstandard2.0</TargetFrameworks>
     <RootNamespace>StbiSharp</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Library</OutputType>
@@ -20,7 +20,7 @@
     <Owners>Thomas Müller</Owners>
     <IncludeBuildOutput>true</IncludeBuildOutput>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="$(TargetFrameworkVersion) == 'v2.0'">
     <PackageReference Include="System.Memory" Version="4.5.3" />
   </ItemGroup>
   <ItemGroup>
