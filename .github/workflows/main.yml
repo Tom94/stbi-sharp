@@ -40,7 +40,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake ../libstbi
+          cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 ../libstbi
           make install
       - uses: actions/upload-artifact@master
         with:
