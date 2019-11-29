@@ -72,7 +72,7 @@ jobs:
           path: runtimes/win-x64
 
   build_wrapper:
-    name: Build and publish C# wrapper
+    name: Build C# wrapper
     runs-on: ubuntu-latest
     needs: [build_native_linux, build_native_macos, build_native_windows]
 
