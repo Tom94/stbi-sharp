@@ -94,8 +94,9 @@ jobs:
         run: |
           export VERSION=`echo ${{ github.ref }} | cut -d'/' -f3 | tail -c +2`
           echo $VERSION
+          sed s/%COMMIT%/${{ github.sha }}/ < stbi-sharp.csproj > stbi-sharp-build.csproj
           echo Building and packing...
-          dotnet pack -c Release /p:Version=$VERSION
+          dotnet pack stbi-sharp-build.csproj -c Release /p:Version=$VERSION
           echo Publishing...
           cd bin/Release
           dotnet nuget push StbiSharp.$VERSION.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json

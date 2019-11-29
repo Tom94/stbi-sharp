@@ -7,15 +7,18 @@
     <Description>A wrapper around stb_image.h</Description>
     <AssemblyTitle>STBI C# wrapper</AssemblyTitle>
     <AssemblyName>StbiSharp</AssemblyName>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
   <PropertyGroup Label="Nuget">
     <IsPackable>true</IsPackable>
     <Title>STBI C# wrapper</Title>
     <Description>A C# wrapper of the single-header stb_image.h image-loading library.</Description>
+    <Copyright>(c) Thomas Müller</Copyright>
     <PackageId>StbiSharp</PackageId>
     <PackageTags>image png jpg jpeg bmp tga hdr psd pnm load</PackageTags>
     <PackageReleaseNotes>Automated release.</PackageReleaseNotes>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/tom94/stbi-sharp</RepositoryUrl>
+    <RepositoryCommit>%COMMIT%</RepositoryCommit>
     <Authors>Thomas Müller</Authors>
     <Owners>Thomas Müller</Owners>
     <IncludeBuildOutput>true</IncludeBuildOutput>
