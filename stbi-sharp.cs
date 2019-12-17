@@ -215,8 +215,13 @@ namespace StbiSharp
         /// <summary>
         /// After failure to load an image, returns a string describing the reason for the failure.
         /// </summary>
-        [DllImport("stbi")]
-        public static extern string FailureReason();
+        [DllImport("stbi", EntryPoint="FailureReason")]
+        unsafe public static extern IntPtr FailureReasonIntPtr();
+
+        /// <summary>
+        /// After failure to load an image, returns a string describing the reason for the failure.
+        /// </summary>
+        public static string FailureReason() => Marshal.PtrToStringAuto(FailureReasonIntPtr());
 
         /// <summary>
         /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
