@@ -11,7 +11,7 @@ on:
 jobs:
   build_native_linux:
     name: Build native on linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
 
     steps:
       - uses: actions/checkout@v1
