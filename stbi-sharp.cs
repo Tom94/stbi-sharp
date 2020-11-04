@@ -205,7 +205,8 @@ namespace StbiSharp
         unsafe public static extern byte* LoadFromMemory(byte* data, long len, out int width, out int height, out int numChannels, int desiredNumChannels);
 
         /// <summary>
-        /// flip the image vertically, so the first pixel in the output array is the bottom left
+        /// Flip the image vertically, so the first pixel in the output array is the bottom left.
+
         /// </summary>
         /// <param name="flagTrueIfShouldFlip">Flag set if should flip vertically on load.
         [DllImport("stbi")]
