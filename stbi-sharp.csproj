@@ -7,6 +7,7 @@
     <Description>A wrapper around stb_image.h</Description>
     <AssemblyTitle>STBI C# wrapper</AssemblyTitle>
     <AssemblyName>StbiSharp</AssemblyName>
+    <Version>1.0.1</Version>
   </PropertyGroup>
   <PropertyGroup Label="Nuget">
     <IsPackable>true</IsPackable>

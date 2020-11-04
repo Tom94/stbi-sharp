@@ -46,6 +46,10 @@ extern "C" {
         return stbi_load_from_memory(data, (int)len, w, h, nChannels, nDesiredChannels);
     }
 
+    EXPORT void SetFlipVerticallyOnLoad(int flag_true_if_should_flip) {
+        stbi_set_flip_vertically_on_load(flag_true_if_should_flip);
+    }
+
     EXPORT void Free(unsigned char* pixels) {
         stbi_image_free(pixels);
     }

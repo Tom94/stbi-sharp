@@ -113,9 +113,9 @@ namespace StbiSharp
         unsafe public static void LoadFromMemoryIntoBuffer(ReadOnlySpan<byte> data, int desiredNumChannels, Span<byte> dst)
         {
             fixed (byte* address = data)
-                fixed (byte* dstAddress = dst)
-                    if (!LoadFromMemoryIntoBuffer(address, data.Length, desiredNumChannels, dstAddress))
-                        throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
+            fixed (byte* dstAddress = dst)
+                if (!LoadFromMemoryIntoBuffer(address, data.Length, desiredNumChannels, dstAddress))
+                    throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
         }
 
         /// <summary>
@@ -204,6 +204,9 @@ namespace StbiSharp
         [DllImport("stbi")]
         unsafe public static extern byte* LoadFromMemory(byte* data, long len, out int width, out int height, out int numChannels, int desiredNumChannels);
 
+        [DllImport("stbi")]
+        unsafe public static extern void StbiSetFlipVerticallyOnLoad(bool flagTrueIfShouldFlip);
+
         /// <summary>
         /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/>. Only
         /// has to be called when the byte-pointer overload of <see cref="LoadFromMemory"/> was used.
@@ -215,7 +218,7 @@ namespace StbiSharp
         /// <summary>
         /// After failure to load an image, returns a string describing the reason for the failure.
         /// </summary>
-        [DllImport("stbi", EntryPoint="FailureReason")]
+        [DllImport("stbi", EntryPoint = "FailureReason")]
         unsafe public static extern IntPtr FailureReasonIntPtr();
 
         /// <summary>
@@ -240,9 +243,11 @@ namespace StbiSharp
         /// been allocated to store the image data.</returns>
         unsafe public static StbiImage LoadFromMemory(ReadOnlySpan<byte> data, int desiredNumChannels)
         {
-            fixed (byte* address = data) {
+            fixed (byte* address = data)
+            {
                 byte* pixels = LoadFromMemory(address, data.Length, out int width, out int height, out int numChannels, desiredNumChannels);
-                if (pixels == null) {
+                if (pixels == null)
+                {
                     throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
                 }
 
@@ -267,5 +272,7 @@ namespace StbiSharp
         /// been allocated to store the image data.</returns>
         public static StbiImage LoadFromMemory(MemoryStream data, int desiredNumChannels)
             => LoadFromMemory(data.GetBuffer(), desiredNumChannels);
+
+        public static void SetFlipVerticallyOnLoad(bool flagTrueIfShouldFlip) => StbiSetFlipVerticallyOnLoad(flagTrueIfShouldFlip);
     }
 }
