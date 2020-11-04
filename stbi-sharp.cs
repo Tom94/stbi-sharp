@@ -204,8 +204,12 @@ namespace StbiSharp
         [DllImport("stbi")]
         unsafe public static extern byte* LoadFromMemory(byte* data, long len, out int width, out int height, out int numChannels, int desiredNumChannels);
 
+        /// <summary>
+        /// flip the image vertically, so the first pixel in the output array is the bottom left
+        /// </summary>
+        /// <param name="flagTrueIfShouldFlip">Flag set if should flip vertically on load.
         [DllImport("stbi")]
-        unsafe public static extern void StbiSetFlipVerticallyOnLoad(bool flagTrueIfShouldFlip);
+        unsafe public static extern void SetFlipVerticallyOnLoad(bool flagTrueIfShouldFlip);
 
         /// <summary>
         /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/>. Only
@@ -272,7 +276,5 @@ namespace StbiSharp
         /// been allocated to store the image data.</returns>
         public static StbiImage LoadFromMemory(MemoryStream data, int desiredNumChannels)
             => LoadFromMemory(data.GetBuffer(), desiredNumChannels);
-
-        public static void SetFlipVerticallyOnLoad(bool flagTrueIfShouldFlip) => StbiSetFlipVerticallyOnLoad(flagTrueIfShouldFlip);
     }
 }
