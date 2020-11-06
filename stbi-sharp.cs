@@ -206,11 +206,10 @@ namespace StbiSharp
 
         /// <summary>
         /// Flip the image vertically, so the first pixel in the output array is the bottom left.
-
         /// </summary>
-        /// <param name="flagTrueIfShouldFlip">Flag set if should flip vertically on load.
+        /// <param name="shouldFlip">True if should flip vertically on load.</param>
         [DllImport("stbi")]
-        unsafe public static extern void SetFlipVerticallyOnLoad(bool flagTrueIfShouldFlip);
+        unsafe public static extern void SetFlipVerticallyOnLoad(bool shouldFlip);
 
         /// <summary>
         /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/>. Only
@@ -221,7 +220,7 @@ namespace StbiSharp
         unsafe public static extern void Free(byte* data);
 
         /// <summary>
-        /// After failure to load an image, returns a string describing the reason for the failure.
+        /// After failure to load an image, returns a pointer to a string describing the reason for the failure.
         /// </summary>
         [DllImport("stbi", EntryPoint = "FailureReason")]
         unsafe public static extern IntPtr FailureReasonIntPtr();
