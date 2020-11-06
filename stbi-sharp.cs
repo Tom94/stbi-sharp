@@ -113,9 +113,9 @@ namespace StbiSharp
         unsafe public static void LoadFromMemoryIntoBuffer(ReadOnlySpan<byte> data, int desiredNumChannels, Span<byte> dst)
         {
             fixed (byte* address = data)
-                fixed (byte* dstAddress = dst)
-                    if (!LoadFromMemoryIntoBuffer(address, data.Length, desiredNumChannels, dstAddress))
-                        throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
+            fixed (byte* dstAddress = dst)
+                if (!LoadFromMemoryIntoBuffer(address, data.Length, desiredNumChannels, dstAddress))
+                    throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
         }
 
         /// <summary>
@@ -205,6 +205,13 @@ namespace StbiSharp
         unsafe public static extern byte* LoadFromMemory(byte* data, long len, out int width, out int height, out int numChannels, int desiredNumChannels);
 
         /// <summary>
+        /// Flip the image vertically, so the first pixel in the output array is the bottom left.
+        /// </summary>
+        /// <param name="shouldFlip">True if should flip vertically on load.</param>
+        [DllImport("stbi")]
+        unsafe public static extern void SetFlipVerticallyOnLoad(bool shouldFlip);
+
+        /// <summary>
         /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/>. Only
         /// has to be called when the byte-pointer overload of <see cref="LoadFromMemory"/> was used.
         /// </summary>
@@ -213,9 +220,9 @@ namespace StbiSharp
         unsafe public static extern void Free(byte* data);
 
         /// <summary>
-        /// After failure to load an image, returns a string describing the reason for the failure.
+        /// After failure to load an image, returns a pointer to a string describing the reason for the failure.
         /// </summary>
-        [DllImport("stbi", EntryPoint="FailureReason")]
+        [DllImport("stbi", EntryPoint = "FailureReason")]
         unsafe public static extern IntPtr FailureReasonIntPtr();
 
         /// <summary>
@@ -240,9 +247,11 @@ namespace StbiSharp
         /// been allocated to store the image data.</returns>
         unsafe public static StbiImage LoadFromMemory(ReadOnlySpan<byte> data, int desiredNumChannels)
         {
-            fixed (byte* address = data) {
+            fixed (byte* address = data)
+            {
                 byte* pixels = LoadFromMemory(address, data.Length, out int width, out int height, out int numChannels, desiredNumChannels);
-                if (pixels == null) {
+                if (pixels == null)
+                {
                     throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
                 }
 
