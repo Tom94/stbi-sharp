@@ -29,6 +29,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "
 endif()
 
 include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/qoi
     ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/stb
 )
 
