@@ -98,6 +98,10 @@ extern "C" {
             return false;
         }
 
+        if (n_desired_channels != 0) {
+            n_channels = n_desired_channels;
+        }
+
         if (g_should_flip_vertically) {
             flip_vertically(dst, tmp, width, height, n_channels);
         } else {
@@ -139,8 +143,9 @@ extern "C" {
         }
 
         if (g_should_flip_vertically) {
-            unsigned char* dst = (unsigned char*)malloc(((size_t)(*w) * (*h)) * (*n_channels));
-            flip_vertically(dst, pixels, *w, *h, *n_channels);
+            int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
+            unsigned char* dst = (unsigned char*)malloc(((size_t)(*w) * (*h)) * n_returned_channels);
+            flip_vertically(dst, pixels, *w, *h, n_returned_channels);
             free(pixels);
             pixels = dst;
         }
