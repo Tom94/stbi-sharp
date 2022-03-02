@@ -3,6 +3,7 @@
 
 #include <inttypes.h>
 #include <string.h>
+#include <cmath>
 
 #define QOI_NO_STDIO
 #define QOI_IMPLEMENTATION
@@ -74,6 +75,32 @@ void flip_vertically(unsigned char* dst, const unsigned char* src, int width, in
     }
 }
 
+void flip_floats_vertically(float* dst, const float* src, int width, int height, int n_channels) {
+    for (int y = 0; y < height; ++y) {
+        int target_y = height - y - 1;
+        int stride_y = width * n_channels;
+        for (int x = 0; x < width; ++x) {
+            for (int c = 0; c < n_channels; ++c) {
+                dst[target_y * stride_y + x * n_channels + c] = src[y * stride_y + x * n_channels + c];
+            }
+        }
+    }
+}
+
+void ldr_to_hdr(float* dst, const unsigned char* src, int width, int height, int n_channels, float gamma) {
+    int n_non_alpha = (n_channels == 1 || n_channels == 3) ? n_channels : n_channels - 1;
+    for (int i = 0; i < width * height; ++i) {
+        for (int c = 0; c < n_non_alpha; ++c) {
+            dst[i * n_channels + c] = std::pow(src[i * n_channels + c] / 255.0f, gamma);
+        }
+    }
+    if (n_non_alpha < n_channels) {
+        for (int i = 0; i < width * height; ++i) {
+            dst[i * n_channels + n_channels - 1] = src[i * n_channels + n_channels - 1] / 255.0f;
+        }
+    }
+}
+
 extern "C" {
     EXPORT bool LoadFromMemoryIntoBuffer(const unsigned char* data, int64_t len, int n_desired_channels, unsigned char* dst) {
         // Dummy variables that are not going to be used. Returning them is unnecessary, because the probided destination buffer
@@ -112,6 +139,46 @@ extern "C" {
         return true;
     }
 
+    EXPORT bool LoadFFromMemoryIntoBuffer(const unsigned char* data, int64_t len, int n_desired_channels, float* dst) {
+        int width, height, n_channels;
+        float* tmp;
+
+        if (is_qoi(data, len)) {
+            g_used_qoi = true;
+            qoi_desc desc;
+            unsigned char* ldr = (unsigned char*)qoi_decode(data, (int)len, &desc, n_desired_channels);
+            width = desc.width;
+            height = desc.height;
+            n_channels = desc.channels;
+
+            int n_returned_channels = (n_desired_channels == 0) ? n_channels : n_desired_channels;
+            tmp = (float*)malloc(sizeof(float) * width * height * n_returned_channels);
+            float gamma = (desc.colorspace == QOI_SRGB) ? 2.2f : 1.0f;
+            ldr_to_hdr(tmp, ldr, width, height, n_returned_channels, gamma);
+            free(ldr);
+        } else {
+            g_used_qoi = false;
+            tmp = stbi_loadf_from_memory(data, (int)len, &width, &height, &n_channels, n_desired_channels);
+        }
+
+        if (!tmp) {
+            return false;
+        }
+
+        if (n_desired_channels != 0) {
+            n_channels = n_desired_channels;
+        }
+
+        if (g_should_flip_vertically) {
+            flip_floats_vertically(dst, tmp, width, height, n_channels);
+        } else {
+            memcpy(dst, tmp, sizeof(float) * width * height * n_channels);
+        }
+
+        free(tmp);
+        return true;
+    }
+
     EXPORT bool InfoFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels) {
         if (is_qoi(data, len)) {
             g_used_qoi = true;
@@ -126,6 +193,14 @@ extern "C" {
         } else {
             g_used_qoi = false;
             return stbi_info_from_memory(data, (int)len, w, h, n_channels) == 1;
+        }
+    }
+
+    EXPORT bool IsHdrFromMemory(const unsigned char *data, int64_t len) {
+        if (is_qoi(data, len)) {
+            return false;
+        } else {
+            return stbi_is_hdr_from_memory(data, (int)len);
         }
     }
 
@@ -153,11 +228,45 @@ extern "C" {
         return pixels;
     }
 
+    EXPORT float* LoadFFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels) {
+        float* pixels;
+
+        if (is_qoi(data, len)) {
+            qoi_desc desc;
+            unsigned char* ldr = (unsigned char*)qoi_decode(data, (int)len, &desc, n_desired_channels);
+            *w = desc.width;
+            *h = desc.height;
+            *n_channels = desc.channels;
+
+            int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
+            pixels = (float*)malloc(sizeof(float) * (*w) * (*h) * n_returned_channels);
+            float gamma = (desc.colorspace == QOI_SRGB) ? 2.2f : 1.0f;
+            ldr_to_hdr(pixels, ldr, *w, *h, n_returned_channels, gamma);
+            free(ldr);
+        } else {
+            pixels = stbi_loadf_from_memory(data, (int)len, w, h, n_channels, n_desired_channels);
+        }
+
+        if (g_should_flip_vertically) {
+            int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
+            float* dst = (float*)malloc(sizeof(float) * (*w) * (*h) * n_returned_channels);
+            flip_floats_vertically(dst, pixels, *w, *h, n_returned_channels);
+            free(pixels);
+            pixels = dst;
+        }
+
+        return pixels;
+    }
+
     EXPORT void SetFlipVerticallyOnLoad(int should_flip) {
         g_should_flip_vertically = should_flip;
     }
 
     EXPORT void Free(unsigned char* pixels) {
+        free(pixels);
+    }
+
+    EXPORT void FreeF(float* pixels) {
         free(pixels);
     }
 
