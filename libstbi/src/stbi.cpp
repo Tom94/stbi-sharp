@@ -63,19 +63,8 @@ bool qoi_decode_header(const void* data, int size, qoi_desc* desc) {
 bool g_should_flip_vertically = false;
 bool g_used_qoi = false;
 
-void flip_vertically(unsigned char* dst, const unsigned char* src, int width, int height, int n_channels) {
-    for (int y = 0; y < height; ++y) {
-        int target_y = height - y - 1;
-        int stride_y = width * n_channels;
-        for (int x = 0; x < width; ++x) {
-            for (int c = 0; c < n_channels; ++c) {
-                dst[target_y * stride_y + x * n_channels + c] = src[y * stride_y + x * n_channels + c];
-            }
-        }
-    }
-}
-
-void flip_floats_vertically(float* dst, const float* src, int width, int height, int n_channels) {
+template <typename T>
+void flip_vertically(T* dst, const T* src, int width, int height, int n_channels) {
     for (int y = 0; y < height; ++y) {
         int target_y = height - y - 1;
         int stride_y = width * n_channels;
@@ -88,7 +77,7 @@ void flip_floats_vertically(float* dst, const float* src, int width, int height,
 }
 
 void ldr_to_hdr(float* dst, const unsigned char* src, int width, int height, int n_channels, float gamma) {
-    int n_non_alpha = (n_channels == 1 || n_channels == 3) ? n_channels : n_channels - 1;
+    int n_non_alpha = (n_channels == 1 || n_channels == 3) ? n_channels : (n_channels - 1);
     for (int i = 0; i < width * height; ++i) {
         for (int c = 0; c < n_non_alpha; ++c) {
             dst[i * n_channels + c] = std::pow(src[i * n_channels + c] / 255.0f, gamma);
@@ -170,7 +159,7 @@ extern "C" {
         }
 
         if (g_should_flip_vertically) {
-            flip_floats_vertically(dst, tmp, width, height, n_channels);
+            flip_vertically(dst, tmp, width, height, n_channels);
         } else {
             memcpy(dst, tmp, sizeof(float) * width * height * n_channels);
         }
@@ -250,7 +239,7 @@ extern "C" {
         if (g_should_flip_vertically) {
             int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
             float* dst = (float*)malloc(sizeof(float) * (*w) * (*h) * n_returned_channels);
-            flip_floats_vertically(dst, pixels, *w, *h, n_returned_channels);
+            flip_vertically(dst, pixels, *w, *h, n_returned_channels);
             free(pixels);
             pixels = dst;
         }
@@ -262,11 +251,7 @@ extern "C" {
         g_should_flip_vertically = should_flip;
     }
 
-    EXPORT void Free(unsigned char* pixels) {
-        free(pixels);
-    }
-
-    EXPORT void FreeF(float* pixels) {
+    EXPORT void Free(void* pixels) {
         free(pixels);
     }
 

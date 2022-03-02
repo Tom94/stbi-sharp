@@ -7,13 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace StbiSharp
 {
-    /// <summary>
-    /// A disposable class that exposes image data and metadata for images loaded via STBI.
-    /// On disposal, frees any native memory that has been allocated to store the image data.
-    /// </summary>
-    unsafe public class StbiImage : IDisposable
+    unsafe public class StbiImageBase : IDisposable
     {
-        private byte* data = null;
+        protected void* data = null;
 
         /// <summary>
         /// The width of the image in number of pixels.
@@ -30,13 +26,7 @@ namespace StbiSharp
         /// </summary>
         public int NumChannels { get; private set; }
 
-        /// <summary>
-        /// The raw image data. It is stored in in row-major order, pixel by pixel. Each pixel consists
-        /// of <see cref="NumChannels"/> bytes ordered RGBA.
-        /// </summary>
-        public ReadOnlySpan<byte> Data => new ReadOnlySpan<byte>(data, Width * Height * NumChannels);
-
-        internal StbiImage(byte* data, int width, int height, int numChannels)
+        internal StbiImageBase(void* data, int width, int height, int numChannels)
         {
             this.data = data;
 
@@ -56,7 +46,7 @@ namespace StbiSharp
             }
         }
 
-        ~StbiImage()
+        ~StbiImageBase()
         {
             Dispose(false);
         }
@@ -74,25 +64,26 @@ namespace StbiSharp
     /// A disposable class that exposes image data and metadata for images loaded via STBI.
     /// On disposal, frees any native memory that has been allocated to store the image data.
     /// </summary>
-    unsafe public class StbiImageF : IDisposable
+    unsafe public class StbiImage : StbiImageBase
     {
-        private float* data = null;
-
         /// <summary>
-        /// The width of the image in number of pixels.
+        /// The raw image data. It is stored in in row-major order, pixel by pixel. Each pixel consists
+        /// of <see cref="NumChannels"/> bytes ordered RGBA.
         /// </summary>
-        public int Width { get; private set; }
+        public ReadOnlySpan<byte> Data => new ReadOnlySpan<byte>(data, Width * Height * NumChannels);
 
-        /// <summary>
-        /// The height of the image in number of pixels.
-        /// </summary>
-        public int Height { get; private set; }
+        internal StbiImage(byte* data, int width, int height, int numChannels)
+            : base(data, width, height, numChannels)
+        {
+        }
+    }
 
-        /// <summary>
-        /// The number of colour channels of the image.
-        /// </summary>
-        public int NumChannels { get; private set; }
-
+    /// <summary>
+    /// A disposable class that exposes image data and metadata for images loaded via STBI.
+    /// On disposal, frees any native memory that has been allocated to store the image data.
+    /// </summary>
+    unsafe public class StbiImageF : StbiImageBase
+    {
         /// <summary>
         /// The raw image data. It is stored in in row-major order, pixel by pixel. Each pixel consists
         /// of <see cref="NumChannels"/> floats ordered RGBA.
@@ -100,37 +91,9 @@ namespace StbiSharp
         public ReadOnlySpan<float> Data => new ReadOnlySpan<float>(data, Width * Height * NumChannels);
 
         internal StbiImageF(float* data, int width, int height, int numChannels)
+            : base(data, width, height, numChannels)
         {
-            this.data = data;
-
-            Width = width;
-            Height = height;
-            NumChannels = numChannels;
         }
-
-        #region IDisposable Support
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (data != null)
-            {
-                Stbi.FreeF(data);
-                data = null;
-            }
-        }
-
-        ~StbiImageF()
-        {
-            Dispose(false);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        #endregion
     }
 
     public class Stbi
@@ -403,20 +366,13 @@ namespace StbiSharp
         unsafe public static extern void SetFlipVerticallyOnLoad(bool shouldFlip);
 
         /// <summary>
-        /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/>. Only
-        /// has to be called when the byte-pointer overload of <see cref="LoadFromMemory"/> was used.
+        /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/> or <see cref="LoadFFromMemory"/>.
+        /// Only has to be called when the byte-pointer overload of <see cref="LoadFromMemory"/>
+        /// or the float-pointer overload of <see cref="LoadFFromMemory"/> was used.
         /// </summary>
         /// <param name="data">Pointer to the beginning of the pixel data.</param>
         [DllImport("stbi")]
-        unsafe public static extern void Free(byte* data);
-
-        /// <summary>
-        /// Frees memory of an image that has previously been loaded by <see cref="LoadFFromMemory"/>. Only
-        /// has to be called when the float-pointer overload of <see cref="LoadFFromMemory"/> was used.
-        /// </summary>
-        /// <param name="data">Pointer to the beginning of the pixel data.</param>
-        [DllImport("stbi")]
-        unsafe public static extern void FreeF(float* data);
+        unsafe public static extern void Free(void* data);
 
         /// <summary>
         /// After failure to load an image, returns a pointer to a string describing the reason for the failure.
