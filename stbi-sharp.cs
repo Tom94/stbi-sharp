@@ -171,7 +171,7 @@ namespace StbiSharp
         /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFFromMemory"/>.
         /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
         /// When loading non-HDR images, they will be converted to floating point.
-        /// sRGB images will be remapped to linear, assuming a gamma of 2.2.
+        /// sRGB images will be remapped to linear.
         /// </summary>
         /// <param name="data">Pointer to the beginning of the encoded image data.</param>
         /// <param name="len">Number of bytes that the encoded image data is long.</param>
@@ -195,7 +195,7 @@ namespace StbiSharp
         /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFFromMemory"/>.
         /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
         /// When loading non-HDR images, they will be converted to floating point.
-        /// sRGB images will be remapped to linear, assuming a gamma of 2.2.
+        /// sRGB images will be remapped to linear.
         /// </summary>
         /// <param name="data">The encoded image data to be loaded.</param>
         /// <param name="desiredNumChannels">The number of desired colour channels in the output.
@@ -223,7 +223,7 @@ namespace StbiSharp
         /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFFromMemory"/>.
         /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
         /// When loading non-HDR images, they will be converted to floating point.
-        /// sRGB images will be remapped to linear, assuming a gamma of 2.2.
+        /// sRGB images will be remapped to linear.
         /// </summary>
         /// <param name="data">The encoded image data to be loaded.</param>
         /// <param name="desiredNumChannels">The number of desired colour channels in the output.
@@ -339,7 +339,7 @@ namespace StbiSharp
         /// residing at <paramref name="data"/>.
         /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
         /// When loading non-HDR images, they will be converted to floating point.
-        /// sRGB images will be remapped to linear, assuming a gamma of 2.2.
+        /// sRGB images will be remapped to linear.
         /// </summary>
         /// <param name="data">Pointer to the beginning of the encoded image data.</param>
         /// <param name="len">Number of bytes that the encoded image data is long.</param>
@@ -438,7 +438,7 @@ namespace StbiSharp
         /// residing at <paramref name="data"/>.
         /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
         /// When loading non-HDR images, they will be converted to floating point.
-        /// sRGB images will be remapped to linear, assuming a gamma of 2.2.
+        /// sRGB images will be remapped to linear.
         /// </summary>
         /// <param name="data">The encoded image data to be loaded.</param>
         /// <param name="desiredNumChannels">The number of desired colour channels in the output.
@@ -470,7 +470,7 @@ namespace StbiSharp
         /// residing at <paramref name="data"/>.
         /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
         /// When loading non-HDR images, they will be converted to floating point.
-        /// sRGB images will be remapped to linear, assuming a gamma of 2.2.
+        /// sRGB images will be remapped to linear.
         /// </summary>
         /// <param name="data">The encoded image data to be loaded.</param>
         /// <param name="desiredNumChannels">The number of desired colour channels in the output.
