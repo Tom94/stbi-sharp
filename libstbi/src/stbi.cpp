@@ -112,169 +112,155 @@ void linear_int_to_linear_float(float* dst, const unsigned char* src, int width,
     }
 }
 
-extern "C" {
-    EXPORT bool IsHdrFromMemory(const unsigned char *data, int64_t len);
-    EXPORT unsigned char* LoadFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels);
+bool is_hdr_from_memory(const unsigned char* data, int64_t len) {
+    if (is_qoi(data, len)) {
+        return false;
+    } else {
+        return stbi_is_hdr_from_memory(data, (int)len);
+    }
+}
 
-    EXPORT bool LoadFromMemoryIntoBuffer(const unsigned char* data, int64_t len, int n_desired_channels, unsigned char* dst) {
-        // Dummy variables that are not going to be used. Returning them is unnecessary, because the probided destination buffer
-        // needs to already have the correct size, hence the caller must have already requested the width, height, and number of
-        // channels beforehand.
-        int width, height, n_channels;
-        unsigned char* tmp;
+template <typename T>
+T* load_from_memory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels);
 
-        if (is_qoi(data, len)) {
-            g_used_qoi = true;
-            qoi_desc desc;
-            tmp = (unsigned char*)qoi_decode(data, (int)len, &desc, n_desired_channels);
-            width = desc.width;
-            height = desc.height;
-            n_channels = desc.channels;
-        } else {
-            g_used_qoi = false;
-            tmp = stbi_load_from_memory(data, (int)len, &width, &height, &n_channels, n_desired_channels);
-        }
+template <>
+unsigned char* load_from_memory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels) {
+    unsigned char* pixels;
 
-        if (!tmp) {
-            return false;
-        }
-
-        if (n_desired_channels != 0) {
-            n_channels = n_desired_channels;
-        }
-
-        if (g_should_flip_vertically) {
-            flip_vertically(dst, tmp, width, height, n_channels);
-        } else {
-            memcpy(dst, tmp, ((size_t)width * height) * n_channels);
-        }
-
-        free(tmp);
-        return true;
+    if (is_qoi(data, len)) {
+        qoi_desc desc;
+        pixels = (unsigned char*)qoi_decode(data, (int)len, &desc, n_desired_channels);
+        *w = desc.width;
+        *h = desc.height;
+        *n_channels = desc.channels;
+    } else {
+        pixels = stbi_load_from_memory(data, (int)len, w, h, n_channels, n_desired_channels);
     }
 
-    EXPORT bool LoadFFromMemoryIntoBuffer(const unsigned char* data, int64_t len, int n_desired_channels, float* dst) {
-        int width, height, n_channels;
-        float* tmp;
-        bool needs_flipping = g_should_flip_vertically;
-
-        if (IsHdrFromMemory(data, len)) {
-            g_used_qoi = false;
-            tmp = stbi_loadf_from_memory(data, (int)len, &width, &height, &n_channels, n_desired_channels);
-        } else {
-            needs_flipping = false;
-            unsigned char* ldr = LoadFromMemory(data, len, &width, &height, &n_channels, n_desired_channels);
-            if (!ldr) {
-                return false;
-            }
-            int n_returned_channels = (n_desired_channels == 0) ? n_channels : n_desired_channels;
-            tmp = (float*)malloc(sizeof(float) * width * height * n_returned_channels);
-            if (is_linear_qoi(data, len)) {
-                linear_int_to_linear_float(tmp, ldr, width, height, n_returned_channels);
-            } else {
-                srgb_int_to_linear_float(tmp, ldr, width, height, n_returned_channels);
-            }
-            free(ldr);
-        }
-
-        if (!tmp) {
-            return false;
-        }
-
-        if (n_desired_channels != 0) {
-            n_channels = n_desired_channels;
-        }
-
-        if (needs_flipping) {
-            flip_vertically(dst, tmp, width, height, n_channels);
-        } else {
-            memcpy(dst, tmp, sizeof(float) * width * height * n_channels);
-        }
-
-        free(tmp);
-        return true;
+    if (!pixels) {
+        return nullptr;
     }
 
-    EXPORT bool InfoFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels) {
-        if (is_qoi(data, len)) {
-            g_used_qoi = true;
-            qoi_desc desc;
-            if (!qoi_decode_header(data, (int)len, &desc)) {
-                return false;
-            }
-            *w = desc.width;
-            *h = desc.height;
-            *n_channels = desc.channels;
-            return true;
-        } else {
-            g_used_qoi = false;
-            return stbi_info_from_memory(data, (int)len, w, h, n_channels) == 1;
-        }
+    if (g_should_flip_vertically) {
+        int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
+        unsigned char* dst = (unsigned char*)malloc(((size_t)(*w) * (*h)) * n_returned_channels);
+        flip_vertically(dst, pixels, *w, *h, n_returned_channels);
+        free(pixels);
+        pixels = dst;
     }
 
-    EXPORT bool IsHdrFromMemory(const unsigned char *data, int64_t len) {
-        if (is_qoi(data, len)) {
-            return false;
-        } else {
-            return stbi_is_hdr_from_memory(data, (int)len);
-        }
-    }
+    return pixels;
+}
 
-    EXPORT unsigned char* LoadFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels) {
-        unsigned char* pixels;
+template <>
+float* load_from_memory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels) {
+    float* pixels;
 
-        if (is_qoi(data, len)) {
-            qoi_desc desc;
-            pixels = (unsigned char*)qoi_decode(data, (int)len, &desc, n_desired_channels);
-            *w = desc.width;
-            *h = desc.height;
-            *n_channels = desc.channels;
-        } else {
-            pixels = stbi_load_from_memory(data, (int)len, w, h, n_channels, n_desired_channels);
+    if (is_hdr_from_memory(data, len)) {
+        pixels = stbi_loadf_from_memory(data, (int)len, w, h, n_channels, n_desired_channels);
+        if (!pixels) {
+            return nullptr;
         }
 
         if (g_should_flip_vertically) {
             int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
-            unsigned char* dst = (unsigned char*)malloc(((size_t)(*w) * (*h)) * n_returned_channels);
+            float* dst = (float*)malloc(sizeof(float) * (*w) * (*h) * n_returned_channels);
             flip_vertically(dst, pixels, *w, *h, n_returned_channels);
             free(pixels);
             pixels = dst;
         }
+    } else {
+        // If the image is LDR, promote it to HDR using the sRGB transform.
+        unsigned char* ldr = load_from_memory<unsigned char>(data, len, w, h, n_channels, n_desired_channels);
+        if (!ldr) {
+            return nullptr;
+        }
 
-        return pixels;
+        int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
+        pixels = (float*)malloc(sizeof(float) * (*w) * (*h) * n_returned_channels);
+
+        if (is_linear_qoi(data, len)) {
+            linear_int_to_linear_float(pixels, ldr, *w, *h, n_returned_channels);
+        } else {
+            srgb_int_to_linear_float(pixels, ldr, *w, *h, n_returned_channels);
+        }
+
+        free(ldr);
+    }
+
+    return pixels;
+}
+
+template <typename T>
+bool load_from_memory_info_buffer(const unsigned char* data, int64_t len, int n_desired_channels, T* dst) {
+    // Dummy variables that are not going to be used. Returning them is unnecessary, because the provided destination buffer
+    // needs to already have the correct size, hence the caller must have already requested the width, height, and number of
+    // channels beforehand.
+    int width, height, n_channels;
+
+    // Don't flip the image yet, even if desired, because we can then avoid one additional memcpy below
+    // by directly flipping the buffer from `tmp` into `dst`.
+    bool needs_flipping = g_should_flip_vertically;
+    g_should_flip_vertically = false;
+    T* tmp = load_from_memory<T>(data, len, &width, &height, &n_channels, n_desired_channels);
+    g_should_flip_vertically = needs_flipping;
+
+    if (!tmp) {
+        return false;
+    }
+
+    if (n_desired_channels != 0) {
+        n_channels = n_desired_channels;
+    }
+
+    if (needs_flipping) {
+        flip_vertically(dst, tmp, width, height, n_channels);
+    } else {
+        memcpy(dst, tmp, ((size_t)width * height) * n_channels * sizeof(T));
+    }
+    return true;
+}
+
+bool info_from_memory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels) {
+    if (is_qoi(data, len)) {
+        g_used_qoi = true;
+        qoi_desc desc;
+        if (!qoi_decode_header(data, (int)len, &desc)) {
+            return false;
+        }
+        *w = desc.width;
+        *h = desc.height;
+        *n_channels = desc.channels;
+        return true;
+    } else {
+        g_used_qoi = false;
+        return stbi_info_from_memory(data, (int)len, w, h, n_channels) == 1;
+    }
+}
+
+extern "C" {
+    EXPORT bool LoadFromMemoryIntoBuffer(const unsigned char* data, int64_t len, int n_desired_channels, unsigned char* dst) {
+        return load_from_memory_info_buffer<unsigned char>(data, len, n_desired_channels, dst);
+    }
+
+    EXPORT bool LoadFFromMemoryIntoBuffer(const unsigned char* data, int64_t len, int n_desired_channels, float* dst) {
+        return load_from_memory_info_buffer<float>(data, len, n_desired_channels, dst);
+    }
+
+    EXPORT bool InfoFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels) {
+        return info_from_memory(data, len, w, h, n_channels);
+    }
+
+    EXPORT bool IsHdrFromMemory(const unsigned char* data, int64_t len) {
+        return is_hdr_from_memory(data, len);
+    }
+
+    EXPORT unsigned char* LoadFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels) {
+        return load_from_memory<unsigned char>(data, len, w, h, n_channels, n_desired_channels);
     }
 
     EXPORT float* LoadFFromMemory(const unsigned char* data, int64_t len, int* w, int* h, int* n_channels, int n_desired_channels) {
-        float* pixels;
-
-        if (IsHdrFromMemory(data, len)) {
-            pixels = stbi_loadf_from_memory(data, (int)len, w, h, n_channels, n_desired_channels);
-            if (!pixels) {
-                return NULL;
-            }
-            if (g_should_flip_vertically) {
-                int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
-                float* dst = (float*)malloc(sizeof(float) * (*w) * (*h) * n_returned_channels);
-                flip_vertically(dst, pixels, *w, *h, n_returned_channels);
-                free(pixels);
-                pixels = dst;
-            }
-        } else {
-            unsigned char* ldr = LoadFromMemory(data, len, w, h, n_channels, n_desired_channels);
-            if (!ldr) {
-                return NULL;
-            }
-            int n_returned_channels = (n_desired_channels == 0) ? *n_channels : n_desired_channels;
-            pixels = (float*)malloc(sizeof(float) * (*w) * (*h) * n_returned_channels);
-            if (is_linear_qoi(data, len)) {
-                linear_int_to_linear_float(pixels, ldr, *w, *h, n_returned_channels);
-            } else {
-                srgb_int_to_linear_float(pixels, ldr, *w, *h, n_returned_channels);
-            }
-            free(ldr);
-        }
-
-        return pixels;
+        return load_from_memory<float>(data, len, w, h, n_channels, n_desired_channels);
     }
 
     EXPORT void SetFlipVerticallyOnLoad(int should_flip) {
