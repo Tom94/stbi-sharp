@@ -7,13 +7,9 @@ using System.Runtime.InteropServices;
 
 namespace StbiSharp
 {
-    /// <summary>
-    /// A disposable class that exposes image data and metadata for images loaded via STBI.
-    /// On disposal, frees any native memory that has been allocated to store the image data.
-    /// </summary>
-    unsafe public class StbiImage : IDisposable
+    unsafe public class StbiImageBase : IDisposable
     {
-        private byte* data = null;
+        protected void* data = null;
 
         /// <summary>
         /// The width of the image in number of pixels.
@@ -30,13 +26,7 @@ namespace StbiSharp
         /// </summary>
         public int NumChannels { get; private set; }
 
-        /// <summary>
-        /// The raw image data. It is stored in in row-major order, pixel by pixel. Each pixel consists
-        /// of <see cref="NumChannels"/> bytes ordered RGBA.
-        /// </summary>
-        public ReadOnlySpan<byte> Data => new ReadOnlySpan<byte>(data, Width * Height * NumChannels);
-
-        internal StbiImage(byte* data, int width, int height, int numChannels)
+        internal StbiImageBase(void* data, int width, int height, int numChannels)
         {
             this.data = data;
 
@@ -56,7 +46,7 @@ namespace StbiSharp
             }
         }
 
-        ~StbiImage()
+        ~StbiImageBase()
         {
             Dispose(false);
         }
@@ -68,6 +58,42 @@ namespace StbiSharp
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// A disposable class that exposes image data and metadata for images loaded via STBI.
+    /// On disposal, frees any native memory that has been allocated to store the image data.
+    /// </summary>
+    unsafe public class StbiImage : StbiImageBase
+    {
+        /// <summary>
+        /// The raw image data. It is stored in in row-major order, pixel by pixel. Each pixel consists
+        /// of <see cref="NumChannels"/> bytes ordered RGBA.
+        /// </summary>
+        public ReadOnlySpan<byte> Data => new ReadOnlySpan<byte>(data, Width * Height * NumChannels);
+
+        internal StbiImage(byte* data, int width, int height, int numChannels)
+            : base(data, width, height, numChannels)
+        {
+        }
+    }
+
+    /// <summary>
+    /// A disposable class that exposes image data and metadata for images loaded via STBI.
+    /// On disposal, frees any native memory that has been allocated to store the image data.
+    /// </summary>
+    unsafe public class StbiImageF : StbiImageBase
+    {
+        /// <summary>
+        /// The raw image data. It is stored in in row-major order, pixel by pixel. Each pixel consists
+        /// of <see cref="NumChannels"/> floats ordered RGBA.
+        /// </summary>
+        public ReadOnlySpan<float> Data => new ReadOnlySpan<float>(data, Width * Height * NumChannels);
+
+        internal StbiImageF(float* data, int width, int height, int numChannels)
+            : base(data, width, height, numChannels)
+        {
+        }
     }
 
     public class Stbi
@@ -139,6 +165,81 @@ namespace StbiSharp
             LoadFromMemoryIntoBuffer(data.GetBuffer(), desiredNumChannels, dst);
 
         /// <summary>
+        /// Loads an encoded image (in HDR, PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/> into <paramref name="dst"/>. Requires an additional copy
+        /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFFromMemory"/>.
+        /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
+        /// When loading non-HDR images, they will be converted to floating point.
+        /// sRGB images will be remapped to linear.
+        /// </summary>
+        /// <param name="data">Pointer to the beginning of the encoded image data.</param>
+        /// <param name="len">Number of bytes that the encoded image data is long.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <param name="dst">Pointer to the beginning of the destination buffer into which the
+        /// image is loaded. The loaded image will be stored in this buffer in row-major format, pixel
+        /// by pixel. Each pixel consists of N floats where N is the number of channels, ordered RGBA.</param>
+        /// <returns>True on success, false on failure.</returns>
+        [DllImport("stbi")]
+        unsafe public static extern bool LoadFFromMemoryIntoBuffer(byte* data, long len, int desiredNumChannels, float* dst);
+
+        /// <summary>
+        /// Loads an encoded image (in HDR, PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/> into <paramref name="dst"/>. Requires an additional copy
+        /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFFromMemory"/>.
+        /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
+        /// When loading non-HDR images, they will be converted to floating point.
+        /// sRGB images will be remapped to linear.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <param name="dst">The destination buffer into which the image is loaded. The loaded image
+        /// will be stored in this buffer in row-major format, pixel by pixel. Each pixel consists of
+        /// N floats where N is the number of channels, ordered RGBA.</param>
+        /// <exception cref="ArgumentException">Thrown when image loading fails.</exception>
+        unsafe public static void LoadFFromMemoryIntoBuffer(ReadOnlySpan<byte> data, int desiredNumChannels, Span<float> dst)
+        {
+            fixed (byte* address = data)
+            fixed (float* dstAddress = dst)
+                if (!LoadFFromMemoryIntoBuffer(address, data.Length, desiredNumChannels, dstAddress))
+                    throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
+        }
+
+        /// <summary>
+        /// Loads an encoded image (in HDR, PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/> into <paramref name="dst"/>. Requires an additional copy
+        /// to <paramref name="dst"/> and is thus slower than <see cref="LoadFFromMemory"/>.
+        /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
+        /// When loading non-HDR images, they will be converted to floating point.
+        /// sRGB images will be remapped to linear.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <param name="dst">The destination buffer into which the image is loaded. The loaded image
+        /// will be stored in this buffer in row-major format, pixel by pixel. Each pixel consists of
+        /// N floats where N is the number of channels, ordered RGBA.</param>
+        /// <exception cref="ArgumentException">Thrown when image loading fails.</exception>
+        public static void LoadFFromMemoryInfoBuffer(MemoryStream data, int desiredNumChannels, Span<float> dst) =>
+            LoadFFromMemoryIntoBuffer(data.GetBuffer(), desiredNumChannels, dst);
+
+        /// <summary>
         /// Retrieves metadata from an encoded image (in PNG, JPG, or another supported format; see the README of
         /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
         /// residing at <paramref name="data"/>.
@@ -183,6 +284,34 @@ namespace StbiSharp
             => InfoFromMemory(data.GetBuffer(), out width, out height, out numChannels);
 
         /// <summary>
+        /// Returns whether or not an encoded image is an HDR image (e.g. Radiance .HDR image; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported HDR formats)
+        /// </summary>
+        /// <param name="data">Pointer to the beginning of the encoded image data.</param>
+        /// <param name="len">Number of bytes that the encoded image data is long.</param>
+        [DllImport("stbi")]
+        unsafe public static extern bool IsHdrFromMemory(byte* data, long len);
+
+        /// <summary>
+        /// Returns whether or not an encoded image is an HDR image (e.g. Radiance .HDR image; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported HDR formats)
+        /// </summary>
+        /// <param name="data">The encoded image data.</param>
+        unsafe public static bool IsHdrFromMemory(ReadOnlySpan<byte> data)
+        {
+            fixed (byte* address = data)
+                return IsHdrFromMemory(address, data.Length);
+        }
+
+        /// <summary>
+        /// Returns whether or not an encoded image is an HDR image (e.g. Radiance .HDR image; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported HDR formats)
+        /// </summary>
+        /// <param name="data">The encoded image data.</param>
+        public static bool IsHdrFromMemory(MemoryStream data)
+            => IsHdrFromMemory(data.GetBuffer());
+
+        /// <summary>
         /// Loads an encoded image (in PNG, JPG, or another supported format; see the README of
         /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
         /// residing at <paramref name="data"/>.
@@ -205,6 +334,31 @@ namespace StbiSharp
         unsafe public static extern byte* LoadFromMemory(byte* data, long len, out int width, out int height, out int numChannels, int desiredNumChannels);
 
         /// <summary>
+        /// Loads an encoded image (in HDR, PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
+        /// When loading non-HDR images, they will be converted to floating point.
+        /// sRGB images will be remapped to linear.
+        /// </summary>
+        /// <param name="data">Pointer to the beginning of the encoded image data.</param>
+        /// <param name="len">Number of bytes that the encoded image data is long.</param>
+        /// <param name="width">The number of pixels the image is wide.</param>
+        /// <param name="height">The number of pixels the image is tall.</param>
+        /// <param name="numChannels">The number of colour channels of the image.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <returns>Null on failure. On success, returns a pointer to the beginning of the buffer into which the
+        /// image was loaded. The loaded image will be stored in this buffer in row-major format, pixel
+        /// by pixel. Each pixel consists of N floats where N is the number of channels, ordered RGBA.</returns>
+        [DllImport("stbi")]
+        unsafe public static extern float* LoadFFromMemory(byte* data, long len, out int width, out int height, out int numChannels, int desiredNumChannels);
+
+        /// <summary>
         /// Flip the image vertically, so the first pixel in the output array is the bottom left.
         /// </summary>
         /// <param name="shouldFlip">True if should flip vertically on load.</param>
@@ -212,12 +366,13 @@ namespace StbiSharp
         unsafe public static extern void SetFlipVerticallyOnLoad(bool shouldFlip);
 
         /// <summary>
-        /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/>. Only
-        /// has to be called when the byte-pointer overload of <see cref="LoadFromMemory"/> was used.
+        /// Frees memory of an image that has previously been loaded by <see cref="LoadFromMemory"/> or <see cref="LoadFFromMemory"/>.
+        /// Only has to be called when the byte-pointer overload of <see cref="LoadFromMemory"/>
+        /// or the float-pointer overload of <see cref="LoadFFromMemory"/> was used.
         /// </summary>
         /// <param name="data">Pointer to the beginning of the pixel data.</param>
         [DllImport("stbi")]
-        unsafe public static extern void Free(byte* data);
+        unsafe public static extern void Free(void* data);
 
         /// <summary>
         /// After failure to load an image, returns a pointer to a string describing the reason for the failure.
@@ -276,5 +431,58 @@ namespace StbiSharp
         /// been allocated to store the image data.</returns>
         public static StbiImage LoadFromMemory(MemoryStream data, int desiredNumChannels)
             => LoadFromMemory(data.GetBuffer(), desiredNumChannels);
+
+        /// <summary>
+        /// Loads an encoded image (in HDR, PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
+        /// When loading non-HDR images, they will be converted to floating point.
+        /// sRGB images will be remapped to linear.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <returns>Returns a disposable <see cref="StbiImageF"/> object that exposes image data
+        /// and metadata. On disposal, <see cref="StbiImageF"/> frees any native memory that has
+        /// been allocated to store the image data.</returns>
+        unsafe public static StbiImageF LoadFFromMemory(ReadOnlySpan<byte> data, int desiredNumChannels)
+        {
+            fixed (byte* address = data)
+            {
+                float* pixels = LoadFFromMemory(address, data.Length, out int width, out int height, out int numChannels, desiredNumChannels);
+                if (pixels == null)
+                {
+                    throw new ArgumentException($"STBI could not load an image from the provided {nameof(data)}: {FailureReason()}");
+                }
+
+                return new StbiImageF(pixels, width, height, desiredNumChannels == 0 ? numChannels : desiredNumChannels);
+            }
+        }
+
+        /// <summary>
+        /// Loads an encoded image (in HDR, PNG, JPG, or another supported format; see the README of
+        /// https://github.com/nothings/stb/blob/master/stb_image.h for a list of supported formats)
+        /// residing at <paramref name="data"/>.
+        /// The image is returned in floating point format, which preserves the full dynamic range of HDR files.
+        /// When loading non-HDR images, they will be converted to floating point.
+        /// sRGB images will be remapped to linear.
+        /// </summary>
+        /// <param name="data">The encoded image data to be loaded.</param>
+        /// <param name="desiredNumChannels">The number of desired colour channels in the output.
+        /// When the encoded image has fewer channels than the desired number of channels,
+        /// then the desired number of channels will be produced automatically. For example,
+        /// when the encoded image is RGB, but 4 channels are requested, then a fully opaque
+        /// alpha channel will be generated. Supplying a value of 0 means that the native number
+        /// of channels of the encoded image is used.</param>
+        /// <returns>Returns a disposable <see cref="StbiImageF"/> object that exposes image data
+        /// and metadata. On disposal, <see cref="StbiImageF"/> frees any native memory that has
+        /// been allocated to store the image data.</returns>
+        public static StbiImageF LoadFFromMemory(MemoryStream data, int desiredNumChannels)
+            => LoadFFromMemory(data.GetBuffer(), desiredNumChannels);
     }
 }
