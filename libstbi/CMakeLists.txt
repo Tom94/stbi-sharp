@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.10.0)
 
 project(stbi)
 
@@ -52,5 +52,5 @@ elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif()
 
 install(TARGETS stbi
-    DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../runtimes/${RUNTIME_DIR}/native
+    DESTINATION $<PATH:ABSOLUTE_PATH,NORMALIZE,../runtimes/${RUNTIME_DIR}/native,${CMAKE_CURRENT_SOURCE_DIR}>
 )
