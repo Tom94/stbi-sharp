@@ -11,6 +11,9 @@ permissions:
 jobs:
   build_native_linux:
     name: Build native on linux
+    # it's important to run on the oldest available ubuntu image,
+    # as that causes the binaries to be linked against older glibc versions,
+    # which improves compatibility with older end-user Linux distributions
     runs-on: ubuntu-22.04
 
     steps:
