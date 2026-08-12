@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.10.0)
 
 project(stbi)
 
@@ -37,20 +37,6 @@ add_library(stbi SHARED
     src/stbi.cpp
 )
 
-if (MSVC)
-    set(RUNTIME_DIR "win")
-elseif (APPLE)
-    set(RUNTIME_DIR "osx")
-else()
-    set(RUNTIME_DIR "linux")
-endif()
-
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(RUNTIME_DIR "${RUNTIME_DIR}-x64")
-elseif (CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set(RUNTIME_DIR "${RUNTIME_DIR}-x86")
-endif()
-
 install(TARGETS stbi
-    DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../runtimes/${RUNTIME_DIR}/native
+    DESTINATION $<PATH:ABSOLUTE_PATH,NORMALIZE,../out,${CMAKE_CURRENT_SOURCE_DIR}>
 )
