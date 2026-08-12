@@ -93,13 +93,13 @@ jobs:
         with:
           name: win-x64
           path: runtimes/win-x64
-      - name: Get version, build, and publish
+      - name: Build and pack
         run: |
-          export VERSION=`echo ${GITHUB_REF_NAME} | tail -c +2`
-          echo $VERSION
-          sed s/%COMMIT%/${{ github.sha }}/ < stbi-sharp.csproj > stbi-sharp-build.csproj
-          echo Building and packing...
-          dotnet pack stbi-sharp-build.csproj -c Release /p:Version=$VERSION
-          echo Publishing...
-          cd bin/Release
-          dotnet nuget push StbiSharp.$VERSION.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+            dotnet pack stbi-sharp.csproj -o artifacts -c Release /p:Version=`echo ${GITHUB_REF_NAME} | tail -c +2` /p:RepositoryCommit=${GITHUB_SHA}
+      - name: Upload full nupkg
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+            name: nupkg
+            path: artifacts/*.nupkg
+      - name: Publish to nuget.org
+        run: dotnet nuget push artifacts/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json

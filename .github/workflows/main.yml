@@ -96,5 +96,10 @@ jobs:
         with:
           name: win-x64
           path: runtimes/win-x64
-      - name: Build and pack nuget package
-        run: dotnet pack -c Release
+      - name: Build and pack
+        run: dotnet pack -c Release -o artifacts
+      - name: Upload full nupkg
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+            name: nupkg
+            path: artifacts/*.nupkg

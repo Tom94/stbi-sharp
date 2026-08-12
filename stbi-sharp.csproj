@@ -18,7 +18,6 @@
     <PackageReleaseNotes>Automated release.</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <RepositoryUrl>https://github.com/tom94/stbi-sharp</RepositoryUrl>
-    <RepositoryCommit>%COMMIT%</RepositoryCommit>
     <Authors>Thomas Müller</Authors>
     <Owners>Thomas Müller</Owners>
     <IncludeBuildOutput>true</IncludeBuildOutput>
