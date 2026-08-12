@@ -8,13 +8,16 @@ on:
     branches:
       - master
 
+permissions:
+    contents: read # required by actions/checkout to fetch source
+
 jobs:
   build_native_linux:
     name: Build native on linux
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
       - name: Build
@@ -23,7 +26,7 @@ jobs:
           cd build
           cmake ../libstbi
           make install
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: linux-x64
           path: runtimes/linux-x64
@@ -33,7 +36,7 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
       - name: Build
@@ -42,7 +45,7 @@ jobs:
           cd build
           cmake -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 ../libstbi
           make install
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: osx-x64
           path: runtimes/osx-x64
@@ -52,12 +55,12 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
       - name: Setup MSBuild.exe
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
 
       - name: Build
         run: |
@@ -66,7 +69,7 @@ jobs:
           cmake ../libstbi
           msbuild /v:m /p:Configuration=Release INSTALL.vcxproj
 
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: win-x64
           path: runtimes/win-x64
@@ -77,19 +80,19 @@ jobs:
     needs: [build_native_linux, build_native_macos, build_native_windows]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Grab linux binary
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: linux-x64
           path: runtimes/linux-x64
       - name: Grab macOS binary
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: osx-x64
           path: runtimes/osx-x64
       - name: Grab Windows binary
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: win-x64
           path: runtimes/win-x64
