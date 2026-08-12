@@ -17,6 +17,7 @@
     <PackageTags>image png jpg jpeg bmp tga hdr psd pnm load</PackageTags>
     <PackageReleaseNotes>Automated release.</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/tom94/stbi-sharp</RepositoryUrl>
     <Authors>Thomas Müller</Authors>
     <Owners>Thomas Müller</Owners>
@@ -33,5 +34,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="LICENSE.txt" Pack="true" PackagePath="$(PackageLicenseFile)"/>
+    <None Include="README.md" Pack="true" PackagePath="$(PackageReadmeFile)"/>
   </ItemGroup>
 </Project>
