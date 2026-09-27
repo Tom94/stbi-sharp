@@ -5,6 +5,9 @@ on:
     tags:
       - v*
 
+env:
+  NDK_VER: 28.2.13676358
+
 permissions:
     contents: read # required by actions/checkout to fetch source
 
@@ -74,10 +77,55 @@ jobs:
           name: win-x64
           path: out
 
+  build_native_android:
+    name: Build native on Android
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: 17
+
+      - name: Install Android SDK Manager
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'cmdline-tools;latest'
+
+      - name: Install Android SDK
+        run: |
+          sdkmanager --install "ndk;$NDK_VER"
+
+      - name: Build
+        run: |
+          cmake \
+            -S libstbi \
+            -B build \
+            -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=21 \
+            -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+          mkdir -p out
+          cp build/libstbi.so out/
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: android-arm64
+          path: out
+
   build_and_publish_wrapper:
     name: Build and publish C# wrapper
     runs-on: ubuntu-latest
-    needs: [build_native_linux, build_native_macos, build_native_windows]
+    needs: [build_native_linux, build_native_macos, build_native_windows, build_native_android]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -96,6 +144,11 @@ jobs:
         with:
           name: win-x64
           path: runtimes/win-x64/native
+      - name: Grab Android binary
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: android-arm64
+          path: runtimes/android-arm64/native
       - name: Build and pack
         run: |
             dotnet pack stbi-sharp.csproj -o artifacts -c Release /p:Version=`echo ${GITHUB_REF_NAME} | tail -c +2` /p:RepositoryCommit=${GITHUB_SHA}
